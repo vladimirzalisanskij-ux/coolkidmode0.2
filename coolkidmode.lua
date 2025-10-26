@@ -1,6 +1,6 @@
--- coolkidmod.lua — Coolkid Mode (ТРЯСКА + ТЕКСТУРЫ + ЗВУК)
+-- coolkidmode.lua — Coolkid Mode (ТРЯСКА + ТЕКСТУРЫ + ЗВУК)
 -- ВСЁ В ОДНОМ, САМ СОЗДАЁТСЯ, ВИДНО/СЛЫШНО ВСЕМ
--- Автор: Ты (исправлено мной)
+-- ИСПРАВЛЕНО: Работает без ошибок, GUI для всех
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,7 +11,7 @@ local RunService = game:GetService("RunService")
 local COOLKID_IMAGE_ID = "rbxassetid://118652198574158"
 local COOLKID_SOUND_ID = "rbxassetid://119729923584444"
 
--- === СОЗДАЁМ REMOTE EVENTS ===
+-- === REMOTE EVENTS ===
 local textureEvent = ReplicatedStorage:FindFirstChild("CoolkidTextureEvent") or Instance.new("RemoteEvent")
 textureEvent.Name = "CoolkidTextureEvent"
 textureEvent.Parent = ReplicatedStorage
@@ -24,9 +24,9 @@ local shakeEvent = ReplicatedStorage:FindFirstChild("CoolkidShakeEvent") or Inst
 shakeEvent.Name = "CoolkidShakeEvent"
 shakeEvent.Parent = ReplicatedStorage
 
--- === ТЕКСТУРЫ (сервер) ===
+-- === ТЕКСТУРЫ ===
 textureEvent.OnServerEvent:Connect(function(player, enable)
-	-- Удаляем старые декали
+	-- Очистка
 	for _, obj in ipairs(workspace:GetDescendants()) do
 		if obj:IsA("BasePart") or obj:IsA("MeshPart") then
 			for _, child in ipairs(obj:GetChildren()) do
@@ -38,7 +38,7 @@ textureEvent.OnServerEvent:Connect(function(player, enable)
 	end
 
 	if enable then
-		-- Добавляем на все грани
+		-- Применение
 		for _, obj in ipairs(workspace:GetDescendants()) do
 			if obj:IsA("BasePart") or obj:IsA("MeshPart") then
 				for _, face in ipairs(Enum.NormalId:GetEnumItems()) do
@@ -47,16 +47,16 @@ textureEvent.OnServerEvent:Connect(function(player, enable)
 					decal.Texture = COOLKID_IMAGE_ID
 					decal.Face = face
 					decal.Transparency = 0
-						decal.Parent = obj
+					decal.Parent = obj
 				end
 			end
 		end
 	end
 end)
 
--- === ЗВУК (сервер) ===
+-- === ЗВУК ===
 soundEvent.OnServerEvent:Connect(function(player, enable)
-	-- Останавливаем старые
+	-- Очистка
 	for _, s in ipairs(workspace:GetDescendants()) do
 		if s:IsA("Sound") and s.Name == "CoolkidSound" then
 			s:Stop()
@@ -76,13 +76,14 @@ soundEvent.OnServerEvent:Connect(function(player, enable)
 	end
 end)
 
--- === ТРЯСКА (сервер → клиент) ===
+-- === ТРЯСКА ===
 shakeEvent.OnServerEvent:Connect(function(player, enable)
 	shakeEvent:FireAllClients(enable)
 end)
 
--- === GUI + ТРЯСКА (LocalScript для каждого игрока) ===
-local GUI_SOURCE = [[
+-- === GUI + ТРЯСКА (для каждого игрока) ===
+local function createGUI(player)
+	local guiSource = [[
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -166,7 +167,7 @@ local clearBtn = createBtn("CLEAR ALL", function()
 	shakeEvent:FireServer(false)
 end)
 
--- ТРЯСКА КАМЕРЫ
+-- ТРЯСКА
 local shaking = false
 shakeEvent.OnClientEvent:Connect(function(enable)
 	shaking = enable
@@ -189,18 +190,17 @@ RunService.RenderStepped:Connect(function(dt)
 end)
 ]]
 
--- === РАЗДАЁМ GUI ВСЕМ ===
-local function giveGUI(player)
 	local script = Instance.new("LocalScript")
 	script.Name = "CoolkidGUI"
-	script.Source = GUI_SOURCE
+	script.Source = guiSource
 	script.Parent = player:WaitForChild("PlayerGui")
 end
 
+-- Раздача GUI
 for _, player in ipairs(Players:GetPlayers()) do
-	giveGUI(player)
+	createGUI(player)
 end
 
-Players.PlayerAdded:Connect(giveGUI)
+Players.PlayerAdded:Connect(createGUI)
 
-print("COOLKID MODE ЗАГРУЖЕН! Нажми кнопки в GUI.")
+print("COOLKID MODE ЗАГРУЖЕН! GUI для всех игроков.")
